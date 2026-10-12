@@ -9,7 +9,6 @@ import android.location.LocationManager
 import android.os.*
 import android.view.*
 import android.widget.*
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class SpeedOverlayService : Service(), LocationListener {
@@ -26,8 +25,7 @@ class SpeedOverlayService : Service(), LocationListener {
         startForeground(1, notification())
         showOverlay()
         lm = getSystemService(LOCATION_SERVICE) as LocationManager
-        try { lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 250L, 0f, this) }
-        catch (_: SecurityException) {}
+        try { lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 250L, 0f, this) } catch (_: SecurityException) {}
     }
 
     override fun onBind(i: Intent?) = null
@@ -35,6 +33,7 @@ class SpeedOverlayService : Service(), LocationListener {
     override fun onDestroy() {
         try { lm.removeUpdates(this) } catch (_: Exception) {}
         overlay?.let { try { wm.removeView(it) } catch (_: Exception) {} }
+        stopForeground(true)
         super.onDestroy()
     }
 
@@ -45,20 +44,36 @@ class SpeedOverlayService : Service(), LocationListener {
 
     private fun showOverlay() {
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
+
         val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             background = getDrawable(R.drawable.overlay_bg)
-            setPadding(28, 10, 28, 10)
+            setPadding(22, 8, 8, 8)
         }
+
         val n = TextView(this).apply {
             text = "0"
             textSize = 44f
             setTextColor(android.graphics.Color.WHITE)
             gravity = Gravity.CENTER
             includeFontPadding = false
+            setPadding(4, 0, 12, 0)
         }
+
+        val close = TextView(this).apply {
+            text = "×"
+            textSize = 28f
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+            setPadding(12, 4, 12, 4)
+            contentDescription = "Close speedometer"
+            setOnClickListener { stopSelf() }
+        }
+
         box.addView(n)
+        box.addView(close)
         speedText = n
         overlay = box
 
@@ -78,41 +93,24 @@ class SpeedOverlayService : Service(), LocationListener {
         var sy = 0f
         var ox = 0
         var oy = 0
-        var moved = false
-        var lastTap = 0L
 
-        box.setOnTouchListener { _, e ->
+        // Drag using the speed number; X remains an independent one-tap close button.
+        n.setOnTouchListener { _, e ->
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    sx = e.rawX
-                    sy = e.rawY
-                    ox = params.x
-                    oy = params.y
-                    moved = false
-                    true
+                    sx = e.rawX; sy = e.rawY; ox = params.x; oy = params.y; true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (abs(e.rawX - sx) > 8 || abs(e.rawY - sy) > 8) moved = true
                     params.x = ox + (e.rawX - sx).toInt()
                     params.y = oy + (e.rawY - sy).toInt()
                     wm.updateViewLayout(box, params)
                     true
                 }
-                MotionEvent.ACTION_UP -> {
-                    if (!moved) {
-                        val now = SystemClock.elapsedRealtime()
-                        if (now - lastTap < 450) {
-                            stopSelf()
-                            lastTap = 0L
-                        } else {
-                            lastTap = now
-                        }
-                    }
-                    true
-                }
+                MotionEvent.ACTION_UP -> true
                 else -> false
             }
         }
+
         wm.addView(box, params)
     }
 
