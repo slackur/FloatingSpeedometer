@@ -1,1 +1,1 @@
-GitHub Actions build configuration for FloatingSpeedometer.
+FloatingSpeedometer GitHub Actions build workflow - fixed runner setup.
