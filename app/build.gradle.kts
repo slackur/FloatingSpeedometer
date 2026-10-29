@@ -7,6 +7,10 @@ android {
     namespace = "com.jarred.floatingspeedometer"
     compileSdk = 35
 
+    buildFeatures {
+        aidl = true
+    }
+
     defaultConfig {
         applicationId = "com.jarred.floatingspeedometer"
         minSdk = 26
