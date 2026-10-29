@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.jarred.floatingspeedometer"
+        applicationId = "com.jarred.floatingspeedometer.test"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
