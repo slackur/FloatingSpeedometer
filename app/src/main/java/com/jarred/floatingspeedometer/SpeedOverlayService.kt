@@ -209,8 +209,29 @@ class SpeedOverlayService : Service(), LocationListener {
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(updater)
-        try { lm.removeUpdates(this) } catch (_: Exception) {}
-        if (torqueBound) try { unbindService(torqueConnection) } catch (_: Exception) {}
-        overlay?.let { try { wm.removeView(it) } catch (_: Exception) {} }
-        stop
+    handler.removeCallbacks(updater)
+
+    try {
+        lm.removeUpdates(this)
+    } catch (_: Exception) {
+    }
+
+    if (torqueBound) {
+        try {
+            unbindService(torqueConnection)
+        } catch (_: Exception) {
+        }
+        torqueBound = false
+    }
+
+    overlay?.let {
+        try {
+            wm.removeView(it)
+        } catch (_: Exception) {
+        }
+    }
+
+    stopForeground(true)
+    super.onDestroy()
+}
+}
